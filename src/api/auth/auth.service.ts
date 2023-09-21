@@ -3,7 +3,6 @@ import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { AuthResponseDto } from './dto/response-auth.dto';
-import { EmailOtpService } from '../../services/email-otp/email-otp.service';
 
 // NOTE - This is the interface for the token that will be returned to the user
 export interface IToken {
@@ -14,7 +13,6 @@ export interface IToken {
 export class AuthService {
     constructor(
         private usersService: UserService,
-        private emailOtpService: EmailOtpService,
         private jwtService: JwtService,
     ) {}
 

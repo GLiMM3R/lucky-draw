@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { UserModule } from './api/user/user.module';
 import { PrismaModule } from './config/prisma/prisma.module';
 import { AuthModule } from './api/auth/auth.module';
-import { EmailOtpModule } from './services/email-otp/email-otp.module';
 import { AcceptLanguageResolver, HeaderResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import * as path from 'path';
 
@@ -27,7 +26,6 @@ import * as path from 'path';
         PrismaModule,
         UserModule,
         AuthModule,
-        EmailOtpModule,
     ],
     controllers: [],
     providers: [],
