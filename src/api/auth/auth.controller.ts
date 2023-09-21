@@ -89,7 +89,7 @@ export class AuthController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(RefreshGuard, RolesGuard)
+    @UseGuards(RefreshGuard)
     @HttpCode(HttpStatus.OK)
     @Roles(Role.User)
     @Post('refresh')
@@ -107,7 +107,7 @@ export class AuthController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(AuthGuard, RolesGuard)
+    @UseGuards(AuthGuard)
     @HttpCode(HttpStatus.OK)
     @Get('me')
     @ApiOperation({ summary: 'Get profile', description: '## Get profile' })

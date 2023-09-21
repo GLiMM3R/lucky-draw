@@ -5,15 +5,12 @@ import { UserService } from '../user/user.service';
 import { PrismaModule } from '../../config/prisma/prisma.module';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
-import { EmailOtpModule } from '../../services/email-otp/email-otp.module';
-import { EmailOtpService } from '../../services/email-otp/email-otp.service';
 import { LanguageModule } from '../../config/lang/language.module';
 
 @Module({
     imports: [
         PrismaModule,
         UserModule,
-        EmailOtpModule,
         JwtModule.register({
             global: true,
             secret: process.env.JWT_SECRET,
@@ -22,6 +19,6 @@ import { LanguageModule } from '../../config/lang/language.module';
         LanguageModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, UserService, EmailOtpService],
+    providers: [AuthService, UserService],
 })
 export class AuthModule {}

@@ -1,6 +1,6 @@
 <a name="readme-top"></a>
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://scontent.fvte2-1.fna.fbcdn.net/v/t39.30808-6/357383202_593162022969356_4710326278403268151_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=09cbfe&_nc_eui2=AeFo9Ffc2kQ9YH7GS0iRsnZ-UQ0J0hxcmxRRDQnSHFybFJet5-e8Wk5aq9hW4IOKQUDOUm85pRuC5zE5Tf_OVpto&_nc_ohc=cvyjcMVc1GsAX9YuDKl&_nc_ht=scontent.fvte2-1.fna&oh=00_AfCKrsHHjrxb0r4I85y0eDOdwbvwfWsSPY7a8tyCGn1Eog&oe=64F1B7E5" width="200" alt="IQURI TECH LOGO" /></a>
+  <a href="https://www.facebook.com/iquritech" target="blank"><img src="src/images/iquri-logo.jpg" width="300" alt="IQURI TECH LOGO" /></a>
 </p>
 
   <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
@@ -42,9 +42,6 @@ $ npm run test
 
 # e2e tests
 $ npm run e2e
-
-# test coverage
-$ npm run test:cov
 ```
 
 ## Get into local server 📌
@@ -69,14 +66,47 @@ A Git commit message convention is a set of guidelines for writing commit messag
 ```
 
 ### The “type” field must be chosen from the options listed below:
-- build : Changes related to building the code (e.g. adding npm dependencies or external libraries).
 - chore: Changes that do not affect the external user (e.g. updating the .gitignore file or .prettierrc file).
+<blockquote>
+- chore(docker): add Dockerfile and .dockerignore.
+</blockquote>
+
 - feat: A new feature.
+<blockquote>
+- feat(auth): make authentication and authorization.
+
+  - we secure by guard and identify with roles but not the best way.
+
+  - we should encrypt jwt before production.
+</blockquote>
+
 - fix: A bug fix.
+<blockquote>
+- fix(token): AECK-613 API query profile with token
+</blockquote>
+
 - docs: Documentation a related changes.
+<blockquote> - docs: BAC-66 write visual studio code document guide lines.
+
+  - add logo-stable for vscode
+  - add vscode.md
+  - mod readme.md
+</blockquote>
+
 - refactor: A code that neither fix bug nor adds a feature. (eg: You can use this when there is semantic changes like renaming a variable/ function name).
+<blockquote>
+- refactor: BAC-66 refactor login and register controller.
+</blockquote>
+
 - perf: A code that improves performance style: A code that is related to styling.
+<blockquote>
+- perf: BAC-66 add prettier and eslint.
+</blockquote>
+
 - test: Adding new test or making changes to existing test
+<blockquote>
+- test: BAC-66 add unit test for login and register controller.
+</blockquote>
 
 ### The “scope” is optional
 The “scope” field should be a noun that represents the part of the codebase affected by the commit.

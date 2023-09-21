@@ -11,24 +11,12 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  username   String?
-  password   String?
-  googleId   String?
-  roles      String?  @default("user")
-  isVerified Boolean? @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("users")
-}
-
-model EmailOTP {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  email     String
-  OTP       String
+  username  String?
+  password  String?
+  isActive  Boolean? @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("emailOTPs")
+  @@map("users")
 }
