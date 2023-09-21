@@ -1,0 +1,7 @@
+{
+  "USERNAME_EXIST": "ຊື່ຜູ້ໃຊ້ {username} ນີ້ມີແລ້ວ!",
+  "USER_NOT_FOUND": "ບໍ່ພົບຊື່ຜູ້ໃຊ້!",
+  "INVALID_TOKEN": "Token ບໍ່ຖືກຕ້ອງ!",
+  "CREDENTIAL_TAKEN": "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖທກຕ້ອງ",
+  "CREDENTIAL_NOT_MATCH": "ໄອດີນີ້ບໍ່ຖືກຕ້ອງ!"
+}
