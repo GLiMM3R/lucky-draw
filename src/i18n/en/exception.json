@@ -1,0 +1,7 @@
+{
+  "USERNAME_EXIST": "This {username} already exist!",
+  "USER_NOT_FOUND": "User not found!",
+  "INVALID_TOKEN": "Token invalid!",
+  "CREDENTIAL_TAKEN": "Invalid username or password!",
+  "CREDENTIAL_NOT_MATCH": "ID not match!"
+}
