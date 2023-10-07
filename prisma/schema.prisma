@@ -6,17 +6,144 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
+// datasource db {
+//   provider = "mongodb"
+//   url      = env("DATABASE_URL")
+// }
+
 model User {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  id        String     @id @default(uuid()) @map("id")
   username  String?
   password  String?
-  isActive  Boolean? @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive  Boolean?   @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  campaign  Campaign[]
+  coupon    Coupon[]
+  prize     Prize[]
 
   @@map("users")
 }
+
+model Campaign {
+  id            String         @id @default(uuid()) @map("id")
+  title         String
+  prizeCap      Int
+  type          String
+  file          String?
+  createdById   String
+  createdBy     User           @relation(fields: [createdById], references: [id])
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  prizes        Prize[]
+  winnerRecords WinnerRecord[]
+  coupon        Coupon[]
+
+  @@map("campaigns")
+}
+
+model Prize {
+  id           String         @id @default(uuid()) @map("id")
+  title        String
+  amount       Int
+  rank         Int?
+  image        String?
+  campaignId   String
+  campaign     Campaign       @relation(fields: [campaignId], references: [id])
+  isDone       Boolean        @default(false)
+  isActive     Boolean        @default(true)
+  createdById  String
+  createdBy    User           @relation(fields: [createdById], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  winnerRecord WinnerRecord[]
+
+  @@map("prizes")
+}
+
+model WinnerRecord {
+  id          String   @id @default(uuid()) @map("id")
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  prizeId     String
+  prize       Prize    @relation(fields: [prizeId], references: [id])
+  winnerName  String
+  winnerPhone String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("winner_records")
+}
+
+model Coupon {
+  id          String   @id @default(uuid()) @map("id")
+  name        String?
+  phone       String?
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  isNew       Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("coupon")
+}
+
+// model User {
+//   id        String     @id @default(uuid()) @map("id")
+//   username  String?
+//   password  String?
+//   isActive  Boolean?   @default(true)
+//   createdAt DateTime   @default(now())
+//   updatedAt DateTime   @updatedAt
+//   Campaign  Campaign[]
+
+//   @@map("users")
+// }
+
+// model Campaign {
+//   id            String         @id @default(auto()) @map("_id") @db.ObjectId
+//   title         String
+//   prizeCap      Int
+//   createdById   String         @db.ObjectId
+//   createdBy     User           @relation(fields: [createdById], references: [id])
+//   isActive      Boolean        @default(true)
+//   createdAt     DateTime       @default(now())
+//   updatedAt     DateTime       @updatedAt
+//   prizes        Prize[]
+//   winnerRecords WinnerRecord[]
+
+//   @@map("campaigns")
+// }
+
+// model Prize {
+//   id         String   @id @default(auto()) @map("_id") @db.ObjectId
+//   title      String
+//   amount     Int
+//   image      String?
+//   campaignId String   @db.ObjectId
+//   campaign   Campaign @relation(fields: [campaignId], references: [id])
+//   isActive   Boolean  @default(true)
+//   createdAt  DateTime @default(now())
+//   updatedAt  DateTime @updatedAt
+
+//   @@map("prizes")
+// }
+
+// model WinnerRecord {
+//   id          String   @id @default(auto()) @map("_id") @db.ObjectId
+//   campaignId  String   @db.ObjectId
+//   campaign    Campaign @relation(fields: [campaignId], references: [id])
+//   winnerName  String
+//   winnerPhone String
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   @@map("winner_records")
+// }

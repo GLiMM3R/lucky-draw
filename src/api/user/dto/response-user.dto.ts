@@ -20,20 +20,8 @@ export class ResponseUserDto {
     })
     password: string;
 
-    @ApiProperty({
-        description: 'The google id of the user',
-        example: '2@H2398RH329F232F32H9FOJf',
-    })
-    googleId: string;
-
-    @ApiProperty({
-        description: 'The role of the user',
-        example: 'user',
-    })
-    roles: string;
-
     @ApiProperty()
-    isVerified: boolean;
+    isActive: boolean;
 
     @ApiProperty({
         description: 'The date when the user was created',
@@ -48,6 +36,7 @@ export class ResponseUserDto {
     constructor(user: User) {
         this.id = user.id;
         this.username = user.username;
+        this.isActive = user.isActive;
         this.createdAt = user.createdAt;
         this.updatedAt = user.updatedAt;
     }

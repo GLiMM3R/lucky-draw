@@ -9,13 +9,11 @@ import { LanguageModule } from '../../config/lang/language.module';
 
 @Module({
     imports: [
-        PrismaModule,
-        UserModule,
         JwtModule.register({
             global: true,
-            secret: process.env.JWT_SECRET,
-            signOptions: { expiresIn: process.env.JWT_EXPIRATION_TIME },
         }),
+        PrismaModule,
+        UserModule,
         LanguageModule,
     ],
     controllers: [AuthController],

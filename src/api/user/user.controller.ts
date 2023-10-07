@@ -80,7 +80,7 @@ export class UserController {
     @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'User not found' })
     // NOTE - This is find one user
     async findOne(@Param('id') id: string) {
-        return await this.userService.findOne(id);
+        return await this.userService.getUser(id);
     }
 
     @HttpCode(HttpStatus.OK)

@@ -4,10 +4,8 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthDto } from './dto/auth.dto';
 import { AuthGuard, RefreshGuard } from '../../guard/auth.guard';
-import { RolesGuard } from '../../guard/roles.guard';
-import { Roles } from '../../config/decorators/roles.decorator';
-import { Role } from '../../config/enums/role.enum';
 import { AuthResponseDto } from './dto/response-auth.dto';
+import { Request } from 'express';
 
 @ApiTags('Auth API')
 @Controller('auth')
@@ -91,8 +89,7 @@ export class AuthController {
     @ApiBearerAuth()
     @UseGuards(RefreshGuard)
     @HttpCode(HttpStatus.OK)
-    @Roles(Role.User)
-    @Post('refresh')
+    @Get('refresh')
     @ApiOperation({ summary: 'Refresh token', description: '## Refresh token' })
     @ApiResponse({
         status: HttpStatus.OK,
@@ -102,8 +99,8 @@ export class AuthController {
         status: HttpStatus.UNAUTHORIZED,
         description: 'Unauthorized',
     })
-    async refreshToken(@Req() token: any): Promise<AuthResponseDto> {
-        return await this.authService.refreshToken(token.user);
+    async refreshToken(@Req() request: Request): Promise<AuthResponseDto> {
+        return await this.authService.refreshToken(request);
     }
 
     @ApiBearerAuth()

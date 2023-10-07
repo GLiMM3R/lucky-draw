@@ -3,6 +3,14 @@ import { UserModule } from './api/user/user.module';
 import { PrismaModule } from './config/prisma/prisma.module';
 import { AuthModule } from './api/auth/auth.module';
 import { AcceptLanguageResolver, HeaderResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
+import { CampaignModule } from './api/campaign/campaign.module';
+import { PrizeModule } from './api/prize/prize.module';
+import { WinnerRecordModule } from './api/winner-record/winner-record.module';
+import { FileUploadModule } from './services/file-upload/file-upload.module';
+import { FilesController } from './api/files/files.controller';
+import { FilesModule } from './api/files/files.module';
+import { CouponsModule } from './api/coupons/coupons.module';
+import { RandomModule } from './api/random/random.module';
 import * as path from 'path';
 
 @Module({
@@ -26,8 +34,15 @@ import * as path from 'path';
         PrismaModule,
         UserModule,
         AuthModule,
+        CampaignModule,
+        PrizeModule,
+        WinnerRecordModule,
+        FileUploadModule,
+        FilesModule,
+        CouponsModule,
+        RandomModule,
     ],
-    controllers: [],
+    controllers: [FilesController],
     providers: [],
 })
 export class AppModule {}

@@ -8,5 +8,6 @@ import { LanguageModule } from '../../config/lang/language.module';
     imports: [PrismaModule, LanguageModule],
     controllers: [UserController],
     providers: [UserService],
+    exports: [UserService],
 })
 export class UserModule {}
