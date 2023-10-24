@@ -3,10 +3,10 @@ import { MaxLength, MinLength } from 'class-validator';
 
 export class CreatePrizeDto {
     @ApiProperty({
-        description: 'The id of campaign',
+        description: 'The slug of campaign',
         type: String,
     })
-    campaignId: string;
+    campaignSlug: string;
 
     @ApiProperty({
         description: 'The title of prize',

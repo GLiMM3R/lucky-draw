@@ -11,6 +11,8 @@ import { FilesController } from './api/files/files.controller';
 import { FilesModule } from './api/files/files.module';
 import { CouponsModule } from './api/coupons/coupons.module';
 import { RandomModule } from './api/random/random.module';
+import { ReportsModule } from './api/reports/reports.module';
+import { AppsettingModule } from './api/appsetting/appsetting.module';
 import * as path from 'path';
 
 @Module({
@@ -41,6 +43,8 @@ import * as path from 'path';
         FilesModule,
         CouponsModule,
         RandomModule,
+        ReportsModule,
+        AppsettingModule,
     ],
     controllers: [FilesController],
     providers: [],

@@ -9,7 +9,7 @@ export class UpdateCampaignDto {
     })
     @MaxLength(30)
     @MinLength(3)
-    title: string;
+    title?: string;
 
     @ApiProperty({
         description: 'The maximum win amount per user',
@@ -17,13 +17,15 @@ export class UpdateCampaignDto {
         required: false,
     })
     @Min(0)
-    prizeCap: number;
+    prizeCap?: number;
 
     @ApiProperty({
         required: false,
     })
-    isActive: boolean;
+    isDone?: boolean;
 
-    @ApiProperty({ type: String, format: 'binary', required: false })
-    file?: Express.Multer.File;
+    @ApiProperty({
+        required: false,
+    })
+    isActive?: boolean;
 }

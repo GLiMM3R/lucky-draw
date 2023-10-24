@@ -1,66 +1,33 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Campaign } from '@prisma/client';
+import { Campaign, Coupon, Prize, User } from '@prisma/client';
 
 export class ResponseCampaignDto {
-    @ApiProperty({
-        description: 'The id of the user',
-        example: 'aa525a522a5252a534esf',
-    })
     id: string;
-
-    @ApiProperty({
-        description: 'The username of the user',
-        example: 'John Doe',
-    })
+    slug: string;
     title: string;
-
-    @ApiProperty({
-        description: 'The prize cap of the camapign',
-        example: '3',
-    })
     prizeCap: number;
-
-    @ApiProperty({
-        description: 'The type of the campaign',
-        example: 'random',
-    })
-    campaignType: string;
-
-    @ApiProperty({
-        description: 'The google id of the user',
-        example: '2@H2398RH329F232F32H9FOJf',
-    })
-    prize: object;
-
-    @ApiProperty()
-    createdBy: object;
-
-    @ApiProperty({
-        description: 'The role of the user',
-        example: 'user',
-    })
+    type: string;
+    file: string;
+    prizes: Prize[];
+    createdBy: User;
+    coupons: Coupon[];
+    isDone: boolean;
     isActive: boolean;
-
-    @ApiProperty()
     createdById: string;
-
-    @ApiProperty({
-        description: 'The date when the user was created',
-    })
     createdAt: Date;
-
-    @ApiProperty({
-        description: 'The date when the user was updated',
-    })
     updatedAt: Date;
 
-    constructor(campaign: Campaign) {
+    constructor(campaign: Campaign, user: User, prizes: Prize[], coupons: Coupon[]) {
         this.id = campaign.id;
+        this.slug = campaign.slug;
         this.title = campaign.title;
         this.prizeCap = campaign.prizeCap;
-        this.campaignType = this.campaignType;
+        this.type = campaign.type;
+        this.file = campaign.file;
+        this.isDone = campaign.isDone;
         this.isActive = campaign.isActive;
-        this.createdById = campaign.createdById;
+        this.createdBy = user;
+        this.prizes = prizes;
+        this.coupons = coupons;
         this.createdAt = campaign.createdAt;
         this.updatedAt = campaign.updatedAt;
     }

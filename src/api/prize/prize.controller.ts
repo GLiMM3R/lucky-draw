@@ -1,4 +1,4 @@
-import { Body, Get, Query, Controller, Post, Patch, Param, UploadedFile, UseInterceptors, Req, UseGuards } from '@nestjs/common';
+import { Body, Get, Delete, Query, Controller, Post, Patch, Param, UploadedFile, UseInterceptors, Req, UseGuards } from '@nestjs/common';
 import { PrizeService } from './prize.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -41,5 +41,10 @@ export class PrizeController {
     @ApiConsumes('multipart/form-data', 'application/json')
     async updatePrize(@Param('id') id: string, @Body() prizeData: UpdatePrizeDto, @UploadedFile() image?: Express.Multer.File) {
         return await this.prizeService.updatePrize(id, prizeData, image);
+    }
+
+    @Delete(':id')
+    async deletePrize(@Param('id') id: string) {
+        return await this.prizeService.deletePrize(id);
     }
 }

@@ -21,6 +21,11 @@ export class PrizeService {
             },
             include: {
                 createdBy: true,
+                _count: {
+                    select: {
+                        winnerRecord: true,
+                    },
+                },
             },
             orderBy: {
                 rank: 'desc',
@@ -33,6 +38,14 @@ export class PrizeService {
             where: {
                 id,
             },
+            include: {
+                createdBy: true,
+                _count: {
+                    select: {
+                        winnerRecord: true,
+                    },
+                },
+            },
         });
     }
 
@@ -43,14 +56,22 @@ export class PrizeService {
 
         const user = await this.prisma.user.findUnique({ where: { id: request['user'].sub.id } });
 
+        const findCampaign = await this.prisma.campaign.findUnique({ where: { slug: prizeData.campaignSlug } });
+
+        if (!findCampaign) {
+            throw new NotFoundException();
+        }
+
         if (imageData) {
-            const img = await this.fileUploadService.uploadFile(imageData, 'prizes');
+            const image = await this.fileUploadService.uploadFile(imageData, `prizes/${findCampaign.slug}`);
+
             return await this.prisma.prize.create({
                 data: {
-                    ...prizeData,
+                    campaignId: findCampaign.id,
+                    title: prizeData.title,
                     rank: Number(prizeData.rank) || 0,
                     amount: Number(prizeData.amount) || 0,
-                    image: img,
+                    image: image,
                     createdById: user.id,
                 },
             });
@@ -58,7 +79,8 @@ export class PrizeService {
 
         return await this.prisma.prize.create({
             data: {
-                ...prizeData,
+                campaignId: findCampaign.id,
+                title: prizeData.title,
                 rank: Number(prizeData.rank) || 0,
                 amount: Number(prizeData.amount) || 0,
                 image: '',
@@ -74,6 +96,12 @@ export class PrizeService {
             throw new NotFoundException();
         }
 
+        const findCampaign = await this.prisma.campaign.findUnique({ where: { slug: prizeData.campaignSlug } });
+
+        if (!findCampaign) {
+            throw new NotFoundException();
+        }
+
         if (imageData) {
             if (findPrize.image.trim().length > 0) {
                 const fileExists = await this.fileUploadService.fileExists(findPrize.image);
@@ -82,12 +110,13 @@ export class PrizeService {
                 }
             }
 
-            const image = await this.fileUploadService.uploadFile(imageData, 'prizes');
+            const image = await this.fileUploadService.uploadFile(imageData, `prizes/${findCampaign.slug}`);
 
             return await this.prisma.prize.update({
                 where: { id },
                 data: {
-                    ...prizeData,
+                    campaignId: findCampaign.id,
+                    title: prizeData.title,
                     rank: Number(prizeData.rank),
                     amount: Number(prizeData.amount),
                     image: image,
@@ -99,12 +128,30 @@ export class PrizeService {
         return await this.prisma.prize.update({
             where: { id },
             data: {
-                ...prizeData,
+                campaignId: findCampaign.id,
+                title: prizeData.title,
                 rank: Number(prizeData.rank),
                 amount: Number(prizeData.amount),
                 image: findPrize.image,
                 isActive: Boolean(prizeData.isActive),
             },
         });
+    }
+
+    async deletePrize(id: string) {
+        const findPrize = await this.prisma.prize.findUnique({ where: { id } });
+
+        if (!findPrize) {
+            throw new NotFoundException();
+        }
+
+        if (findPrize.image.trim().length > 0) {
+            const fileExists = await this.fileUploadService.fileExists(findPrize.image);
+            if (fileExists) {
+                await this.fileUploadService.deleteFile(findPrize.image);
+            }
+        }
+
+        await this.prisma.prize.delete({ where: { id: findPrize.id } });
     }
 }

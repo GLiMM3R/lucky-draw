@@ -7,6 +7,8 @@ import { Request } from 'express';
 import { UserService } from '../user/user.service';
 import { FileUploadService } from 'src/services/file-upload/file-upload.service';
 import { selectFields } from 'src/util/selectField.util';
+import { ResponseCampaignDto } from './dto/response-campaign.dto';
+import { stringToSlug } from 'src/util/stringToSlug';
 
 @Injectable()
 export class CampaignService {
@@ -16,6 +18,16 @@ export class CampaignService {
         private readonly languageService: LanguageService,
         private readonly fileUploadService: FileUploadService,
     ) {}
+
+    async validateCampaign(title: string) {
+        const isExists = await this.prisma.campaign.findUnique({
+            where: {
+                title: title,
+            },
+        });
+
+        return !!isExists;
+    }
 
     async getCampaigns(type?: string, field?: string | string[]) {
         const fields = selectFields(field);
@@ -33,25 +45,100 @@ export class CampaignService {
         });
     }
 
-    async getCampaign(id: string, field?: string | string[]) {
-        const fields = selectFields(field);
-
-        return await this.prisma.campaign.findUnique({
+    async getCampaign(id: string): Promise<ResponseCampaignDto> {
+        const findCampaign = await this.prisma.campaign.findUnique({
             where: { id },
             include: {
-                ...fields,
                 prizes: {
                     include: {
                         createdBy: true,
+                        _count: {
+                            select: {
+                                winnerRecord: true,
+                            },
+                        },
+                    },
+                    orderBy: {
+                        rank: 'asc',
                     },
                 },
-                coupon: {
+                coupons: {
+                    where: {
+                        isNew: true,
+                    },
                     include: {
                         createdBy: true,
                     },
+                    orderBy: {
+                        createdAt: 'asc',
+                    },
                 },
+                createdBy: true,
             },
         });
+
+        if (!findCampaign) {
+            throw new NotFoundException();
+        }
+
+        delete findCampaign.createdBy.password;
+
+        const prizes = findCampaign.prizes.map((item) => {
+            return {
+                ...item,
+                leftAmount: item.amount - item._count.winnerRecord,
+            };
+        });
+
+        return new ResponseCampaignDto(findCampaign, findCampaign.createdBy, prizes, findCampaign.coupons);
+    }
+
+    async getCampaignBySlug(slug: string): Promise<ResponseCampaignDto> {
+        const findCampaign = await this.prisma.campaign.findUnique({
+            where: { slug },
+            include: {
+                prizes: {
+                    include: {
+                        createdBy: true,
+                        _count: {
+                            select: {
+                                winnerRecord: true,
+                            },
+                        },
+                    },
+                    orderBy: {
+                        rank: 'asc',
+                    },
+                },
+                coupons: {
+                    where: {
+                        isNew: true,
+                    },
+                    include: {
+                        createdBy: true,
+                    },
+                    orderBy: {
+                        createdAt: 'asc',
+                    },
+                },
+                createdBy: true,
+            },
+        });
+
+        if (!findCampaign) {
+            throw new NotFoundException();
+        }
+
+        delete findCampaign.createdBy.password;
+
+        const prizes = findCampaign.prizes.map((item) => {
+            return {
+                ...item,
+                leftAmount: item.amount - item._count.winnerRecord,
+            };
+        });
+
+        return new ResponseCampaignDto(findCampaign, findCampaign.createdBy, prizes, findCampaign.coupons);
     }
 
     async createCampaign(campaignData: CreateCampaignDto, request: Request) {
@@ -61,10 +148,34 @@ export class CampaignService {
 
         const user = await this.userService.getUser(request['user'].sub.id);
 
-        return await this.prisma.campaign.create({ data: { ...campaignData, createdById: user.id } });
+        return await this.prisma.campaign.create({
+            data: {
+                ...campaignData,
+                title: campaignData.title.trim().toLowerCase(),
+                type: campaignData.type.trim().toLowerCase(),
+                slug: stringToSlug(campaignData.title),
+                createdById: user.id,
+            },
+        });
     }
 
-    async updateCampaign(id: string, campaignData: UpdateCampaignDto, file?: Express.Multer.File) {
+    async updateCampaign(id: string, campaignData: UpdateCampaignDto) {
+        const findCampaign = await this.prisma.campaign.findUnique({ where: { id } });
+
+        if (!findCampaign) {
+            throw new NotFoundException();
+        }
+
+        return await this.prisma.campaign.update({
+            where: { id },
+            data: {
+                ...campaignData,
+                slug: stringToSlug(campaignData.title),
+            },
+        });
+    }
+
+    async updateDataset(id: string, file?: Express.Multer.File) {
         const findCampaign = await this.prisma.campaign.findUnique({ where: { id } });
 
         if (!findCampaign) {
@@ -72,26 +183,30 @@ export class CampaignService {
         }
 
         if (file) {
-            if (findCampaign.file !== null) {
+            if (findCampaign.file && findCampaign.file !== '') {
                 await this.fileUploadService.deleteFile(findCampaign.file);
             }
 
-            const uploadFile = await this.fileUploadService.uploadFile(file, `coupon/${findCampaign.id}`, false);
+            const uploadFile = await this.fileUploadService.uploadFile(file, `dataset/${findCampaign.slug}`, false);
 
             return await this.prisma.campaign.update({
                 where: { id },
                 data: {
-                    ...campaignData,
                     file: uploadFile,
                 },
             });
         } else {
+            if (findCampaign.file.trim().length > 0) {
+                const fileExists = await this.fileUploadService.fileExists(findCampaign.file);
+                if (fileExists) {
+                    await this.fileUploadService.deleteFile(findCampaign.file);
+                }
+            }
+
             return await this.prisma.campaign.update({
                 where: { id },
                 data: {
-                    title: campaignData.title,
-                    prizeCap: Number(campaignData.prizeCap),
-                    isActive: campaignData.isActive,
+                    file: '',
                 },
             });
         }
@@ -99,10 +214,16 @@ export class CampaignService {
 
     async removeCampaign(id: string) {
         const findCampaign = await this.prisma.campaign.findUnique({ where: { id } });
-        console.log('🚀 ~ file: campaign.service.ts:97 ~ CampaignService ~ removeCampaign ~ findCampaign:', findCampaign);
 
         if (!findCampaign) {
             throw new NotFoundException();
+        }
+
+        if (findCampaign.file.trim().length > 0) {
+            const fileExists = await this.fileUploadService.fileExists(findCampaign.file);
+            if (fileExists) {
+                await this.fileUploadService.deleteFile(findCampaign.file);
+            }
         }
 
         return await this.prisma.campaign.delete({

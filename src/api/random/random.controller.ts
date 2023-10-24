@@ -1,9 +1,12 @@
-import { Body, Controller, Get, Post, Param } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { RandomService } from './random.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequestRandomDto } from './dto/request-random.dto';
 import { RequestWheelDto } from './dto/request-wheel.dto';
+import { AuthGuard } from 'src/guard/auth.guard';
 
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 @ApiTags('Random API')
 @Controller('random')
 export class RandomController {

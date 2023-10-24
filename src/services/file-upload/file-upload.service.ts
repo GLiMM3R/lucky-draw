@@ -29,6 +29,7 @@ export class FileUploadService {
             fs.writeFileSync(path.join(folderPath, fileName), file.buffer);
             return filePath;
         } catch (error) {
+            console.log('🚀 ~ file: file-upload.service.ts:32 ~ FileUploadService ~ uploadFile ~ error:', error);
             throw new BadRequestException();
         }
     }
@@ -37,10 +38,8 @@ export class FileUploadService {
         const filePath = path.join(process.env.UPLOAD_FILE_PATH, fileName);
         try {
             fs.accessSync(filePath, fs.constants.F_OK);
-            console.log('File exists');
             return true;
         } catch (err) {
-            console.error('File does not exist');
             return false;
         }
     }

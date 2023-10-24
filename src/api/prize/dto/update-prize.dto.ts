@@ -3,11 +3,11 @@ import { MaxLength, MinLength, Min } from 'class-validator';
 
 export class UpdatePrizeDto {
     @ApiProperty({
-        description: 'The id of campaign',
+        description: 'The slug of campaign',
         type: String,
         required: false,
     })
-    campaignId: string;
+    campaignSlug: string;
 
     @ApiProperty({
         description: 'The title of prize',

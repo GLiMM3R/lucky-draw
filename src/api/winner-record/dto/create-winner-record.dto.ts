@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class RequestWheelDto {
+export class CreateWinnerRecordDto {
     @ApiProperty({
         description: 'The id of campaign',
         type: String,
@@ -11,11 +11,6 @@ export class RequestWheelDto {
         description: 'The id of prize',
     })
     prizeId: string;
-
-    @ApiProperty({
-        description: 'The id of coupon',
-    })
-    couponId: string;
 
     @ApiProperty({
         description: 'Winner name',

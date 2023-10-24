@@ -5,7 +5,7 @@ export class RequestRandomDto {
         description: 'The id of campaign',
         type: String,
     })
-    campaignId: string;
+    campaignSlug: string;
 
     @ApiProperty({})
     prizeId: string;

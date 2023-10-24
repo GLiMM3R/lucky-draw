@@ -18,7 +18,7 @@ export class RandomService {
 
     async randomDraw(randomData: RequestRandomDto) {
         const [findCampaign, findPrize] = await Promise.all([
-            this.prisma.campaign.findUnique({ where: { id: randomData.campaignId } }),
+            this.prisma.campaign.findUnique({ where: { slug: randomData.campaignSlug } }),
             this.prisma.prize.findUnique({ where: { id: randomData.prizeId } }),
         ]);
 
@@ -37,16 +37,17 @@ export class RandomService {
             const filePath = path.join(process.env.UPLOAD_FILE_PATH, findCampaign.file);
 
             if (!fs.existsSync(filePath)) {
-                console.log('no file');
-
-                throw new InternalServerErrorException();
+                throw new BadRequestException();
             }
 
             const stream = fs.createReadStream(filePath);
-            const dataset = await this.csvParser.parse(stream, CsvEntity, null, null, { strict: true, separator: ',' });
+            const dataset = await this.csvParser.parse(stream, CsvEntity, null, null, {
+                strict: true,
+                separator: ',',
+            });
 
             if (dataset.list.length < findPrize.amount) {
-                throw new BadRequestException();
+                throw new BadRequestException('Dataset is less than prize amount');
             }
 
             let index = 1;
@@ -124,18 +125,43 @@ export class RandomService {
     }
 
     async wheelDraw(randomData: RequestWheelDto) {
-        const [findCampaign, findCoupon] = await Promise.all([
-            this.prisma.campaign.findUnique({ where: { id: randomData.campaignId }, include: { prizes: true, coupon: true } }),
-            this.prisma.coupon.findUnique({ where: { id: randomData.couponId } }),
+        const [findCampaign, findPrize] = await Promise.all([
+            this.prisma.campaign.findUnique({ where: { id: randomData.campaignId } }),
+            this.prisma.prize.findUnique({ where: { id: randomData.prizeId } }),
         ]);
 
-        if (!findCampaign || !findCoupon) {
+        if (!findCampaign || !findPrize) {
             throw new BadRequestException();
         }
+        const winnerRecord = await this.prisma.winnerRecord.create({
+            data: {
+                campaignId: randomData.campaignId,
+                prizeId: randomData.prizeId,
+                winnerName: randomData.winnerName,
+                winnerPhone: randomData.winnerPhone,
+            },
+        });
 
-        const randomIndex = Math.floor(Math.random() * findCampaign.prizes.length);
-        const prize = findCampaign.prizes[randomIndex];
+        if (!winnerRecord) {
+            throw new InternalServerErrorException();
+        }
+        await this.prisma.coupon.update({ where: { id: randomData.couponId }, data: { isNew: false } });
 
-        return prize;
+        const prize = await this.prisma.prize.findUnique({
+            where: { id: randomData.prizeId },
+            select: {
+                _count: {
+                    select: {
+                        winnerRecord: true,
+                    },
+                },
+            },
+        });
+
+        if (findPrize.amount === prize._count.winnerRecord) {
+            await this.prisma.prize.update({ where: { id: randomData.prizeId }, data: { isDone: true } });
+        }
+
+        return winnerRecord;
     }
 }

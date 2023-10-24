@@ -25,8 +25,23 @@ export class CampaignController {
         type: String,
         required: false,
     })
+    @ApiQuery({
+        name: 'status',
+        type: String,
+        required: false,
+    })
     async getCampaigns(@Query('type') type?: string, @Query('field') field?: string | string[]) {
         return await this.campaignService.getCampaigns(type, field);
+    }
+
+    @Get('/validate')
+    @ApiQuery({
+        name: 'title',
+        type: String,
+        required: false,
+    })
+    async validateCampaign(@Query('title') title: string) {
+        return await this.campaignService.validateCampaign(title);
     }
 
     @Get(':id')
@@ -35,8 +50,18 @@ export class CampaignController {
         type: String,
         required: false,
     })
-    async getCampaign(@Param('id') id: string, @Query('field') field?: string | string[]) {
-        return await this.campaignService.getCampaign(id, field);
+    async getCampaign(@Param('id') id: string) {
+        return await this.campaignService.getCampaign(id);
+    }
+
+    @Get('/slug/:slug')
+    @ApiQuery({
+        name: 'field',
+        type: String,
+        required: false,
+    })
+    async getCampaignBySlug(@Param('slug') slug: string) {
+        return await this.campaignService.getCampaignBySlug(slug);
     }
 
     @Post()
@@ -47,8 +72,15 @@ export class CampaignController {
     @Patch(':id')
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data', 'application/json')
-    async updateCampaign(@Param('id') id: string, @Body() campaignData: UpdateCampaignDto, @UploadedFile() file?: Express.Multer.File) {
-        return await this.campaignService.updateCampaign(id, campaignData, file);
+    async updateCampaign(@Param('id') id: string, @Body() campaignData: UpdateCampaignDto) {
+        return await this.campaignService.updateCampaign(id, campaignData);
+    }
+
+    @Patch('/dataset/:id')
+    @UseInterceptors(FileInterceptor('file'))
+    @ApiConsumes('multipart/form-data', 'application/json')
+    async updateDataset(@Param('id') id: string, @UploadedFile() file?: Express.Multer.File) {
+        return await this.campaignService.updateDataset(id, file);
     }
 
     @Delete(':id')

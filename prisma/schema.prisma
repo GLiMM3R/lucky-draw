@@ -16,33 +16,47 @@ datasource db {
 // }
 
 model User {
-  id        String     @id @default(uuid()) @map("id")
-  username  String?
-  password  String?
-  isActive  Boolean?   @default(true)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  campaign  Campaign[]
-  coupon    Coupon[]
-  prize     Prize[]
+  id         String       @id @default(uuid()) @map("id")
+  username   String?
+  password   String?
+  isActive   Boolean?     @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  campaign   Campaign[]
+  coupon     Coupon[]
+  prize      Prize[]
+  AppSetting AppSetting[]
 
   @@map("users")
 }
 
+model AppSetting {
+  id          String   @id @default(uuid()) @map("id")
+  randomImage String?
+  wheelImage  String?
+  createdById String   @unique
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Campaign {
   id            String         @id @default(uuid()) @map("id")
-  title         String
+  slug          String         @unique
+  title         String         @unique
   prizeCap      Int
   type          String
   file          String?
   createdById   String
   createdBy     User           @relation(fields: [createdById], references: [id])
+  isDone        Boolean        @default(false)
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   prizes        Prize[]
   winnerRecords WinnerRecord[]
-  coupon        Coupon[]
+  coupons       Coupon[]
 
   @@map("campaigns")
 }
@@ -54,7 +68,7 @@ model Prize {
   rank         Int?
   image        String?
   campaignId   String
-  campaign     Campaign       @relation(fields: [campaignId], references: [id])
+  campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   isDone       Boolean        @default(false)
   isActive     Boolean        @default(true)
   createdById  String
@@ -71,7 +85,7 @@ model WinnerRecord {
   campaignId  String
   campaign    Campaign @relation(fields: [campaignId], references: [id])
   prizeId     String
-  prize       Prize    @relation(fields: [prizeId], references: [id])
+  prize       Prize    @relation(fields: [prizeId], references: [id], onDelete: Cascade)
   winnerName  String
   winnerPhone String
   createdAt   DateTime @default(now())
@@ -85,7 +99,7 @@ model Coupon {
   name        String?
   phone       String?
   campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   isNew       Boolean  @default(true)
   createdById String
   createdBy   User     @relation(fields: [createdById], references: [id])

@@ -1,7 +1,10 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { WinnerRecordService } from './winner-record.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from 'src/guard/auth.guard';
 
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 @ApiTags('Winner Record API')
 @Controller('winner-record')
 export class WinnerRecordController {
@@ -12,8 +15,18 @@ export class WinnerRecordController {
         return await this.winnerRecordService.getWinnerRecords(campaignId);
     }
 
-    @Get(':campaignId/:prizeId')
-    async getWinnerRecord(@Param('campaignId') campaignId: string, @Param('prizeId') prizeId: string) {
-        return await this.winnerRecordService.getWinnerRecord(campaignId, prizeId);
+    @Get(':slug/:prizeId')
+    async getWinnerRecordBySlug(@Param('slug') slug: string, @Param('prizeId') prizeId: string) {
+        return await this.winnerRecordService.getWinnerRecord(slug, prizeId);
     }
+
+    @Get(':slug/report')
+    async reportByCampaign(@Param('slug') slug: string) {
+        return await this.winnerRecordService.getWinnerReport(slug);
+    }
+
+    // @Get(':campaignId/:prizeId')
+    // async getWinnerRecord(@Param('campaignId') campaignId: string, @Param('prizeId') prizeId: string) {
+    //     return await this.winnerRecordService.getWinnerRecord(campaignId, prizeId);
+    // }
 }

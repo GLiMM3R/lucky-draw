@@ -14,7 +14,7 @@ export class CouponsController {
     constructor(private readonly couponsService: CouponsService) {}
 
     @Post()
-    async createPrize(@Body() couponData: CreateCouponDto, @Req() request: Request) {
+    async createCoupon(@Body() couponData: CreateCouponDto, @Req() request: Request) {
         return await this.couponsService.createCoupon(couponData, request);
     }
 
@@ -33,12 +33,12 @@ export class CouponsController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() updateCouponDto: UpdateCouponDto) {
+    updateCoupon(@Param('id') id: string, @Body() updateCouponDto: UpdateCouponDto) {
         return this.couponsService.updateCoupon(id, updateCouponDto);
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
+    removeCoupon(@Param('id') id: string) {
         return this.couponsService.removeCoupon(id);
     }
 }

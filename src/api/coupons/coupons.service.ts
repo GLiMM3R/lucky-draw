@@ -23,9 +23,17 @@ export class CouponsService {
             throw new BadRequestException();
         }
 
+        const findCampaign = await this.prisma.campaign.findUnique({ where: { slug: createCouponDto.campaignSlug } });
+
+        if (!findCampaign) {
+            throw new BadRequestException();
+        }
+
         return await this.prisma.coupon.create({
             data: {
-                ...createCouponDto,
+                campaignId: findCampaign.id,
+                name: createCouponDto.name,
+                phone: createCouponDto.phone,
                 createdById: user.id,
             },
         });
