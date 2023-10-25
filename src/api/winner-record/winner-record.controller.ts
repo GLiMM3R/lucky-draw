@@ -15,14 +15,14 @@ export class WinnerRecordController {
         return await this.winnerRecordService.getWinnerRecords(campaignId);
     }
 
+    @Get('report/:slug')
+    async reportByCampaign(@Param('slug') slug: string) {
+        return await this.winnerRecordService.getWinnerReport(slug);
+    }
+
     @Get(':slug/:prizeId')
     async getWinnerRecordBySlug(@Param('slug') slug: string, @Param('prizeId') prizeId: string) {
         return await this.winnerRecordService.getWinnerRecord(slug, prizeId);
-    }
-
-    @Get(':slug/report')
-    async reportByCampaign(@Param('slug') slug: string) {
-        return await this.winnerRecordService.getWinnerReport(slug);
     }
 
     // @Get(':campaignId/:prizeId')
