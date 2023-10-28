@@ -5,16 +5,11 @@ FROM node:18.17.0-alpine
 WORKDIR /usr/src/app
 
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
-# COPY package*.json ./
-
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
 
 # Install app dependencies
 # RUN npm ci --only=production
 RUN npm ci
-
-# Copy .env file
-# COPY .env /app
 
 # Bundle app source
 COPY . .

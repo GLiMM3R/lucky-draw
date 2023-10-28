@@ -1,41 +1,20 @@
 version: '3.8'
 services:
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: pass12345
-    volumes:
-      - mongodb_data:/data/db
-
-  nestjs:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    container_name: nestjs
-    image: nestjs-template
-    depends_on:
-      - mongodb
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: mongodb://root:pass12345@mongodb:27017/nestjs-template
-      SEED_DATA: 'true'
-
-  seeding:
-    build:
-      context: ./prisma/seeding.ts
-      dockerfile: ./Dockerfile
-    container_name: seeding
-    depends_on:
-      - nestjs
-    environment:
-      DATABASE_URL: mongodb://root:pass12345@mongodb:27017/nestjs-template
-    volumes:
-      - ./seeding-data:/app/seeding-data
+    nestjs:
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        image: jmart-backend
+        ports:
+            - 3000:3000
+        networks:
+            - default
+        volumes:
+            - backend:/usr/src/backend/static
 
 volumes:
-  mongodb_data:
+    backend:
+
+networks:
+    default:
+        driver: bridge
