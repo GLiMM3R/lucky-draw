@@ -1,5 +1,22 @@
 version: '3.8'
 services:
+    mongodb:
+        build: ./mongodb_replica
+        restart: always
+        environment:
+            MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+            MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+            MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+            MONGO_REPLICA_HOST: ${MONGO_REPLICA_HOST}
+            MONGO_REPLICA_SET_NAME: ${MONGO_REPLICA_SET_NAME}
+            MONGO_REPLICA_PORT: ${MONGO_REPLICA_PORT}
+        ports:
+            - 27018:27018
+        volumes:
+            - mongodb-data:/data/db
+        networks:
+            - app-network
+
     nestjs:
         build:
             context: .
@@ -7,14 +24,32 @@ services:
         image: jmart-backend
         ports:
             - 3000:3000
+        environment:
+            DATABASE_URL: ${DATABASE_URL}
         networks:
-            - default
+            - app-network
         volumes:
-            - backend:/usr/src/backend/static
+            - backend:/usr/src/app/static
+        depends_on:
+            - mongodb
+
+    nginx:
+        build:
+            context: ./nginx
+            dockerfile: Dockerfile
+        ports:
+            - 80:80
+        networks:
+            - app-network
+        volumes:
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+        depends_on:
+            - nestjs
 
 volumes:
     backend:
+    mongodb-data:
 
 networks:
-    default:
+    app-network:
         driver: bridge

@@ -6,158 +6,125 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
-// datasource db {
-//   provider = "mongodb"
-//   url      = env("DATABASE_URL")
-// }
-
 model User {
-  id         String       @id @default(uuid()) @map("id")
-  username   String?
-  password   String?
-  isActive   Boolean?     @default(true)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  campaign   Campaign[]
-  coupon     Coupon[]
-  prize      Prize[]
-  AppSetting AppSetting[]
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  username     String?
+  password     String?
+  isActive     Boolean?      @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  draw         Draw[]
+  wheel        Wheel[]
+  randomPrize  DrawPrize[]
+  wheelPrize   WheelPrize[]
+  drawWinners  DrawReport[]
+  wheelWinners WheelReport[]
 
   @@map("users")
 }
 
-model AppSetting {
-  id          String   @id @default(uuid()) @map("id")
-  randomImage String?
-  wheelImage  String?
-  createdById String   @unique
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Draw {
+  id              String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String       @db.ObjectId
+  slug            String       @unique
+  title           String       @unique
+  prizeCap        Int
+  dataset         String?
+  backgroundImage String?
+  loadingImage    String?
+  device          String?      @default("desktop")
+  isComplete      Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  createdBy       User         @relation(fields: [userId], references: [id])
+  prizes          DrawPrize[]
+  winners         DrawReport[]
+
+  @@map("draw")
 }
 
-model Campaign {
-  id            String         @id @default(uuid()) @map("id")
-  slug          String         @unique
-  title         String         @unique
-  prizeCap      Int
-  type          String
-  file          String?
-  createdById   String
-  createdBy     User           @relation(fields: [createdById], references: [id])
-  isDone        Boolean        @default(false)
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  prizes        Prize[]
-  winnerRecords WinnerRecord[]
-  coupons       Coupon[]
+model Wheel {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String        @db.ObjectId
+  slug       String        @unique
+  title      String        @unique
+  baseIcon   String?
+  isComplete Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  createdBy  User          @relation(fields: [userId], references: [id])
+  prizes     WheelPrize[]
+  winners    WheelReport[]
 
-  @@map("campaigns")
+  @@map("wheel")
 }
 
-model Prize {
-  id           String         @id @default(uuid()) @map("id")
-  title        String
-  amount       Int
-  rank         Int?
-  image        String?
-  campaignId   String
-  campaign     Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  isDone       Boolean        @default(false)
-  isActive     Boolean        @default(true)
-  createdById  String
-  createdBy    User           @relation(fields: [createdById], references: [id])
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  winnerRecord WinnerRecord[]
+model DrawPrize {
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
+  drawId     String       @db.ObjectId
+  userId     String       @db.ObjectId
+  rank       Int?
+  title      String
+  amount     Int
+  image      String?
+  isComplete Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  draw       Draw         @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  createdBy  User         @relation(fields: [userId], references: [id])
+  winners    DrawReport[]
 
-  @@map("prizes")
+  @@map("randomPrize")
 }
 
-model WinnerRecord {
-  id          String   @id @default(uuid()) @map("id")
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id])
-  prizeId     String
-  prize       Prize    @relation(fields: [prizeId], references: [id], onDelete: Cascade)
-  winnerName  String
-  winnerPhone String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model WheelPrize {
+  id         String        @id @default(auto()) @map("_id") @db.ObjectId
+  wheelId    String        @db.ObjectId
+  userId     String        @db.ObjectId
+  title      String
+  amount     Int
+  image      String?
+  isComplete Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  wheel      Wheel         @relation(fields: [wheelId], references: [id], onDelete: Cascade)
+  createdBy  User          @relation(fields: [userId], references: [id])
+  winners    WheelReport[]
 
-  @@map("winner_records")
+  @@map("wheelPrize")
 }
 
-model Coupon {
-  id          String   @id @default(uuid()) @map("id")
-  name        String?
-  phone       String?
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  isNew       Boolean  @default(true)
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model DrawReport {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  drawId     String    @db.ObjectId
+  prizeId    String    @db.ObjectId
+  customerId String?
+  name       String
+  phone      String
+  userId     String    @db.ObjectId
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  draw       Draw      @relation(fields: [drawId], references: [id])
+  prize      DrawPrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  createdBy  User      @relation(fields: [userId], references: [id])
 
-  @@map("coupon")
+  @@map("drawReport")
 }
 
-// model User {
-//   id        String     @id @default(uuid()) @map("id")
-//   username  String?
-//   password  String?
-//   isActive  Boolean?   @default(true)
-//   createdAt DateTime   @default(now())
-//   updatedAt DateTime   @updatedAt
-//   Campaign  Campaign[]
+model WheelReport {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  wheelId   String     @db.ObjectId
+  prizeId   String     @db.ObjectId
+  userId    String     @db.ObjectId
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  wheel     Wheel      @relation(fields: [wheelId], references: [id])
+  prize     WheelPrize @relation(fields: [prizeId], references: [id], onDelete: Cascade)
+  createdBy User       @relation(fields: [userId], references: [id])
 
-//   @@map("users")
-// }
-
-// model Campaign {
-//   id            String         @id @default(auto()) @map("_id") @db.ObjectId
-//   title         String
-//   prizeCap      Int
-//   createdById   String         @db.ObjectId
-//   createdBy     User           @relation(fields: [createdById], references: [id])
-//   isActive      Boolean        @default(true)
-//   createdAt     DateTime       @default(now())
-//   updatedAt     DateTime       @updatedAt
-//   prizes        Prize[]
-//   winnerRecords WinnerRecord[]
-
-//   @@map("campaigns")
-// }
-
-// model Prize {
-//   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-//   title      String
-//   amount     Int
-//   image      String?
-//   campaignId String   @db.ObjectId
-//   campaign   Campaign @relation(fields: [campaignId], references: [id])
-//   isActive   Boolean  @default(true)
-//   createdAt  DateTime @default(now())
-//   updatedAt  DateTime @updatedAt
-
-//   @@map("prizes")
-// }
-
-// model WinnerRecord {
-//   id          String   @id @default(auto()) @map("_id") @db.ObjectId
-//   campaignId  String   @db.ObjectId
-//   campaign    Campaign @relation(fields: [campaignId], references: [id])
-//   winnerName  String
-//   winnerPhone String
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
-
-//   @@map("winner_records")
-// }
+  @@map("wheelReport")
+}
