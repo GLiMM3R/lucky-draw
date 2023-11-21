@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ResponseInterceptor } from './config/interceptors/response.interceptor';
 import { setupSwagger } from './config/swagger/swagger.config';
 import { ValidationPipe } from '@nestjs/common';
+import { generateUser } from './config/prisma/seed';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
@@ -16,3 +17,4 @@ async function bootstrap() {
     });
 }
 bootstrap();
+generateUser();

@@ -1,19 +1,19 @@
-import { Injectable, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
-import { LanguageService } from 'src/config/lang/language.service';
-import { PrismaService } from 'src/config/prisma/prisma.service';
+import { Injectable, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { LanguageService } from '../../config/lang/language.service';
+import { PrismaService } from '../../config/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CsvParser } from 'nest-csv-parser';
 import { CsvEntity } from './dto/csv-entity.dto';
-import { stringToSlug } from 'src/util/stringToSlug';
-import { FileUploadService } from 'src/services/file-upload/file-upload.service';
-import * as ExcelJS from 'exceljs';
-import * as tmp from 'tmp';
+import { stringToSlug } from '../../util/stringToSlug';
+import { FileUploadService } from '../../services/file-upload/file-upload.service';
 import { Request } from 'express';
 import { ResponseDraw } from './dto/response-draw.dto';
 import { CreateDraw, CreateDrawUploadFiles } from './dto/create-draw.dto';
 import { UpdateDraw, UpdateDrawUploadFiles } from './dto/update-draw.dto';
 import { RequestDraw } from './dto/request-draw.dto';
+import { DuplicateDraw } from './dto/duplicate-draw.dto';
+import { LoggerService } from '../../services/logger/logger.service';
 
 @Injectable()
 export class DrawService {
@@ -22,9 +22,10 @@ export class DrawService {
         private readonly languageService: LanguageService,
         private readonly csvParser: CsvParser,
         private readonly fileUploadService: FileUploadService,
+        private readonly logger: LoggerService,
     ) {}
 
-    async getDraws(): Promise<ResponseDraw[]> {
+    async getDraws(request: Request): Promise<ResponseDraw[]> {
         const draws = await this.prisma.draw.findMany({
             include: {
                 createdBy: true,
@@ -34,10 +35,12 @@ export class DrawService {
             },
         });
 
+        this.logger.log(`User ${request['user'].sub.id} is fetching all draw`);
+
         return draws.map((item) => new ResponseDraw(item, item.createdBy));
     }
 
-    async getDrawById(id: string): Promise<ResponseDraw> {
+    async getDrawById(id: string, request: Request): Promise<ResponseDraw> {
         if (!id) {
             throw new BadRequestException();
         }
@@ -53,10 +56,12 @@ export class DrawService {
             throw new NotFoundException();
         }
 
+        this.logger.log(`User ${request['user'].sub.id} is fetching draw with ID ${findDraw.id}`);
+
         return new ResponseDraw(findDraw, findDraw.createdBy);
     }
 
-    async getDrawBySlug(slug: string): Promise<ResponseDraw> {
+    async getDrawBySlug(slug: string, request: Request): Promise<ResponseDraw> {
         const findDraw = await this.prisma.draw.findUnique({
             where: { slug },
             include: {
@@ -68,6 +73,8 @@ export class DrawService {
             throw new NotFoundException();
         }
 
+        this.logger.log(`User ${request['user'].sub.id} is fetching draw with slug ${findDraw.id}`);
+
         return new ResponseDraw(findDraw, findDraw.createdBy);
     }
 
@@ -77,29 +84,42 @@ export class DrawService {
         let backgroundImage = '';
         let loadingImage = '';
 
-        if (files.backgroundImage) {
-            backgroundImage = await this.fileUploadService.uploadFile(files.backgroundImage[0], `draw/${slug}/background`);
-        }
-
-        if (files.loadingImage) {
-            loadingImage = await this.fileUploadService.uploadFile(files.loadingImage[0], `draw/${slug}/loading`);
-        }
-
-        await this.prisma.draw.create({
+        const newDraw = await this.prisma.draw.create({
             data: {
                 ...drawData,
-                slug: stringToSlug(drawData.title),
+                slug,
                 backgroundImage,
                 loadingImage,
                 userId: request['user'].sub.id,
             },
         });
 
+        if (files.backgroundImage) {
+            backgroundImage = await this.fileUploadService.uploadFile(files.backgroundImage[0], `draw/${newDraw.id}/background`);
+        }
+
+        if (files.loadingImage) {
+            loadingImage = await this.fileUploadService.uploadFile(files.loadingImage[0], `draw/${newDraw.id}/loading`);
+        }
+
+        await this.prisma.draw.update({
+            where: {
+                id: newDraw.id,
+            },
+            data: {
+                backgroundImage,
+                loadingImage,
+            },
+        });
+
+        this.logger.log(`User ${request['user'].sub.id} is creating draw with ID ${newDraw.id}`);
+
         return 'Create success';
     }
 
-    async updateDraw(id: string, drawData: UpdateDraw, files?: UpdateDrawUploadFiles): Promise<string> {
+    async updateDraw(id: string, drawData: UpdateDraw, request: Request, files?: UpdateDrawUploadFiles): Promise<string> {
         const findDraw = await this.prisma.draw.findUnique({ where: { id } });
+
         if (!findDraw) {
             throw new NotFoundException();
         }
@@ -116,7 +136,7 @@ export class DrawService {
                 }
             }
 
-            backgroundImage = await this.fileUploadService.uploadFile(files.backgroundImage[0], `draw/${findDraw.slug}/background`);
+            backgroundImage = await this.fileUploadService.uploadFile(files.backgroundImage[0], `draw/${findDraw.id}/background`);
         }
 
         if (files.loadingImage) {
@@ -128,7 +148,7 @@ export class DrawService {
                 }
             }
 
-            loadingImage = await this.fileUploadService.uploadFile(files.loadingImage[0], `draw/${findDraw.slug}/loading`);
+            loadingImage = await this.fileUploadService.uploadFile(files.loadingImage[0], `draw/${findDraw.id}/loading`);
         }
 
         await this.prisma.draw.update({
@@ -142,10 +162,58 @@ export class DrawService {
             },
         });
 
+        this.logger.log(`User ${request['user'].sub.id} is updating draw with ID ${findDraw.id}`);
+
         return 'Update draw success!';
     }
 
-    async updateDataset(id: string, file?: Express.Multer.File): Promise<string> {
+    async removeBackgroundImage(id: string, request: Request): Promise<string> {
+        const findDraw = await this.prisma.draw.findUnique({ where: { id } });
+
+        if (!findDraw) {
+            throw new NotFoundException();
+        }
+
+        if (findDraw.backgroundImage && findDraw.backgroundImage !== '') {
+            await this.fileUploadService.deleteFile(findDraw.backgroundImage);
+        }
+
+        await this.prisma.draw.update({
+            where: { id },
+            data: {
+                backgroundImage: '',
+            },
+        });
+
+        this.logger.log(`User ${request['user'].sub.id} is removing draw loading image with ID ${findDraw.id}`);
+
+        return 'Update success!';
+    }
+
+    async removeLoadingImage(id: string, request: Request): Promise<string> {
+        const findDraw = await this.prisma.draw.findUnique({ where: { id } });
+
+        if (!findDraw) {
+            throw new NotFoundException();
+        }
+
+        if (findDraw.loadingImage && findDraw.loadingImage !== '') {
+            await this.fileUploadService.deleteFile(findDraw.loadingImage);
+        }
+
+        await this.prisma.draw.update({
+            where: { id },
+            data: {
+                loadingImage: '',
+            },
+        });
+
+        this.logger.log(`User ${request['user'].sub.id} is removing draw loading image with ID ${findDraw.id}`);
+
+        return 'Update success!';
+    }
+
+    async updateDataset(id: string, request: Request, file?: Express.Multer.File): Promise<string> {
         const findDraw = await this.prisma.draw.findUnique({ where: { id } });
 
         if (!findDraw) {
@@ -154,12 +222,12 @@ export class DrawService {
 
         let dataset = '';
 
-        if (file) {
-            if (findDraw.dataset && findDraw.dataset !== '') {
-                await this.fileUploadService.deleteFile(findDraw.dataset);
-            }
+        if (findDraw.dataset && findDraw.dataset !== '') {
+            await this.fileUploadService.deleteFile(findDraw.dataset);
+        }
 
-            dataset = await this.fileUploadService.uploadFile(file, `draw/${findDraw.slug}/dataset`, false);
+        if (file) {
+            dataset = await this.fileUploadService.uploadFile(file, `draw/${findDraw.id}/dataset`, false);
         }
 
         await this.prisma.draw.update({
@@ -169,61 +237,51 @@ export class DrawService {
             },
         });
 
+        this.logger.log(`User ${request['user'].sub.id} is updating dataset draw with ID ${findDraw.id}`);
+
         return 'Update success!';
     }
 
-    async deleteDraw(id: string): Promise<string> {
+    async deleteDraw(id: string, request: Request): Promise<string> {
         const findDraw = await this.prisma.draw.findUnique({ where: { id } });
 
         if (!findDraw) {
             throw new NotFoundException();
         }
 
-        if (findDraw.dataset.trim()) {
-            const fileExists = await this.fileUploadService.fileExists(findDraw.dataset);
+        const fileExists = await this.fileUploadService.fileExists(`draw/${findDraw.id}`);
 
-            if (fileExists) {
-                await this.fileUploadService.deleteFile(findDraw.dataset);
-            }
-        }
+        if (fileExists) {
+            console.log('true');
 
-        if (findDraw.backgroundImage.trim()) {
-            const fileExists = await this.fileUploadService.fileExists(findDraw.backgroundImage);
-
-            if (fileExists) {
-                await this.fileUploadService.deleteFile(findDraw.backgroundImage);
-            }
+            await this.fileUploadService.deleteDirectory(`draw/${findDraw.id}`);
         }
 
         await this.prisma.draw.delete({
             where: { id: findDraw.id },
         });
 
+        this.logger.log(`User ${request['user'].sub.id} is deleting draw with ID ${findDraw.id}`);
+
         return 'Delete success!';
     }
 
-    async drawing(randomData: RequestDraw, request: Request) {
+    async drawing(randomData: RequestDraw, request: Request): Promise<string> {
         const [findDraw, findPrize] = await Promise.all([
             this.prisma.draw.findUnique({ where: { slug: randomData.slug } }),
-            this.prisma.drawPrize.findUnique({ where: { id: randomData.prizeId } }),
+            this.prisma.drawPrize.findUnique({ where: { id: randomData.prizeId }, include: { _count: { select: { winners: true } } } }),
         ]);
 
         if (!findDraw || !findPrize) {
             throw new BadRequestException();
         }
 
-        const countWinnerRecord = await this.prisma.drawReport.count({
-            where: {
-                drawId: findDraw.id,
-                prizeId: findPrize.id,
-            },
-        });
-
-        if (findPrize.amount > countWinnerRecord) {
+        if (findPrize.amount > findPrize._count.winners) {
+            const randomAvailableUnit = findPrize.amount - findPrize._count.winners;
             const filePath = path.join(process.env.UPLOAD_FILE_PATH, findDraw.dataset);
 
             if (!fs.existsSync(filePath)) {
-                throw new BadRequestException();
+                throw new BadRequestException('No file');
             }
 
             const stream = fs.createReadStream(filePath);
@@ -257,139 +315,172 @@ export class DrawService {
 
             const shuffledArray = shuffleArray(generatedObjects);
 
-            function getRandomObjects(array, numObjects) {
-                const randomIndices = new Set();
-                const randomObjects = [];
+            const randomIndices = new Set();
+            const maxIterations = 10000; // Define your maximum number of iterations
+            let iterations = 0;
 
-                while (randomIndices.size < numObjects) {
-                    const randomIndex = Math.floor(Math.random() * array.length);
-                    const phoneNumber = array[randomIndex].phoneNumber;
+            while (randomIndices.size < randomAvailableUnit && iterations < maxIterations) {
+                const randomIndex = Math.floor(Math.random() * shuffledArray.length);
+                const phoneNumber = shuffledArray[randomIndex].phoneNumber;
 
-                    if (!randomIndices.has(randomIndex) && !randomObjects.some((obj) => obj.phoneNumber === phoneNumber)) {
-                        randomIndices.add(randomIndex);
-                        randomObjects.push(array[randomIndex]);
-                    }
-                }
+                const winnerCount = await this.prisma.drawReport.findMany({ where: { phone: phoneNumber } });
 
-                return randomObjects;
-            }
-
-            const results = getRandomObjects(shuffledArray, findPrize.amount);
-
-            results.forEach(async (item) => {
-                const findWinner = await this.prisma.drawReport.findFirst({
-                    where: {
-                        drawId: findDraw.id,
-                        prizeId: findPrize.id,
-                        phone: item.phoneNumber,
-                    },
-                });
-
-                if (!findWinner) {
+                if (
+                    !randomIndices.has(randomIndex) &&
+                    !winnerCount.some((obj) => obj.phone === phoneNumber && obj.prizeId === findPrize.id && obj.drawId === findDraw.id) &&
+                    winnerCount.length < findDraw.prizeCap
+                ) {
+                    randomIndices.add(randomIndex);
                     await this.prisma.drawReport.create({
                         data: {
                             drawId: findDraw.id,
                             prizeId: findPrize.id,
-                            name: item.name,
-                            customerId: item.customerId,
-                            phone: item.phoneNumber,
+                            name: shuffledArray[randomIndex].name,
+                            customerId: shuffledArray[randomIndex].customerId,
+                            phone: shuffledArray[randomIndex].phoneNumber,
                             userId: request['user'].sub.id,
                         },
                     });
                 }
-            });
+                iterations++;
+            }
+
+            if (randomIndices.size !== findPrize.amount) {
+                throw new ConflictException('Random not sucess');
+            }
+            // function getRandomObjects(array: any[], numObjects: number) {
+            //     const randomIndices = new Set();
+            //     const randomObjects = [];
+
+            //     while (randomIndices.size < numObjects) {
+            //         const randomIndex = Math.floor(Math.random() * array.length);
+            //         const phoneNumber = array[randomIndex].phoneNumber;
+
+            //         if (!randomIndices.has(randomIndex) && !randomObjects.some((obj) => obj.phoneNumber === phoneNumber)) {
+            //             randomIndices.add(randomIndex);
+            //             randomObjects.push(array[randomIndex]);
+            //         }
+            //     }
+
+            //     return randomObjects;
+            // }
+
+            // const results = getRandomObjects(shuffledArray, findPrize.amount);
+
+            // results.forEach(async (item) => {
+            //     await this.prisma.drawReport.create({
+            //         data: {
+            //             drawId: findDraw.id,
+            //             prizeId: findPrize.id,
+            //             name: item.name,
+            //             customerId: item.customerId,
+            //             phone: item.phoneNumber,
+            //             userId: request['user'].sub.id,
+            //         },
+            //     });
+            // });
 
             await this.prisma.drawPrize.update({ where: { id: findPrize.id }, data: { isComplete: true } });
 
-            return await this.prisma.drawReport.findMany({
-                where: {
-                    drawId: findDraw.id,
-                    prizeId: findPrize.id,
-                },
-            });
+            this.logger.log(`User ${request['user'].sub.id} is radnom draw with  DrawId ${findDraw.id} and PrizeId ${findPrize.id}`);
+
+            return 'Draw success!';
         } else {
             throw new BadRequestException('This prize already have winner!');
         }
     }
 
-    async downloadDrawReport(id: string) {
-        try {
-            const findDraw = await this.prisma.draw.findUnique({ where: { id }, include: { prizes: { include: { winners: true } } } });
+    async duplicateCampaign(id: string, drawData: DuplicateDraw, request: Request): Promise<string> {
+        const [findDraw, findExist] = await Promise.all([
+            this.prisma.draw.findUnique({ where: { id } }),
+            this.prisma.draw.findFirst({ where: { title: drawData.title, slug: stringToSlug(drawData.title) } }),
+        ]);
 
-            if (!findDraw) {
-                throw new NotFoundException();
-            }
-
-            const workbook = new ExcelJS.Workbook();
-
-            const worksheet = workbook.addWorksheet('Sheet 1');
-
-            let reports;
-            findDraw.prizes.forEach((prize) => {
-                if (prize) {
-                    prize.winners.forEach((item) => {
-                        const data = {
-                            campaign: findDraw.title,
-                            prize: prize.title,
-                            winnerName: item.name,
-                            customerId: item.customerId,
-                            winnerPhone: item.phone,
-                            createdAt: item.createdAt,
-                        };
-                        reports.push(data);
-                    });
-                }
-            });
-
-            worksheet.columns = [
-                {
-                    header: 'Campaign',
-                    key: 'campaign',
-                },
-                {
-                    header: 'Prize',
-                    key: 'prize',
-                },
-                {
-                    header: 'WinnerName',
-                    key: 'winnerName',
-                },
-                {
-                    header: 'CustomerId',
-                    key: 'customerId',
-                },
-                {
-                    header: 'WinnerPhone',
-                    key: 'winnerPhone',
-                },
-                {
-                    header: 'CreatedAt',
-                    key: 'createdAt',
-                },
-            ];
-
-            worksheet.addRows(reports);
-
-            const file = await new Promise((resolve) => {
-                tmp.file({ discarDescriptor: true, prefix: findDraw.title, postfix: '.xlsx', mode: parseInt('0600', 8) }, async (err, file) => {
-                    if (err) {
-                        throw new BadRequestException(err);
-                    }
-
-                    workbook.xlsx
-                        .writeFile(file)
-                        .then(() => {
-                            resolve(file);
-                        })
-                        .catch((err) => {
-                            throw new BadRequestException(err);
-                        });
-                });
-            });
-
-            return file;
-        } catch (error) {
-            throw new InternalServerErrorException(error);
+        if (!findDraw) {
+            throw new BadRequestException();
         }
+
+        if (findExist) {
+            throw new BadRequestException('Already exits');
+        }
+
+        let dataset = '';
+        let backgroundImage = '';
+        let loadingImage = '';
+
+        const newDraw = await this.prisma.draw.create({
+            data: {
+                slug: stringToSlug(drawData.title),
+                title: drawData.title,
+                prizeCap: findDraw.prizeCap,
+                dataset: findDraw.dataset,
+                backgroundImage: findDraw.backgroundImage,
+                loadingImage: findDraw.loadingImage,
+                device: findDraw.device,
+                userId: request['user'].sub.id,
+            },
+        });
+
+        if (findDraw.dataset) {
+            dataset = `draw/${newDraw.id}/dataset/${path.basename(findDraw.dataset)}`;
+            const folder = `draw/${newDraw.id}/dataset/`;
+
+            await this.fileUploadService.copyFile(findDraw.dataset, folder, path.basename(findDraw.dataset));
+        }
+
+        if (findDraw.backgroundImage) {
+            backgroundImage = `draw/${newDraw.id}/backgroundImage/${path.basename(findDraw.backgroundImage)}`;
+            const folder = `draw/${newDraw.id}/backgroundImage/`;
+
+            await this.fileUploadService.copyFile(findDraw.backgroundImage, folder, path.basename(findDraw.backgroundImage));
+        }
+
+        if (findDraw.loadingImage) {
+            loadingImage = `draw/${newDraw.id}/loading/${path.basename(findDraw.loadingImage)}`;
+            const folder = `draw/${newDraw.id}/loading/`;
+
+            await this.fileUploadService.copyFile(findDraw.loadingImage, folder, path.basename(findDraw.loadingImage));
+        }
+
+        await this.prisma.draw.update({
+            where: {
+                id: newDraw.id,
+            },
+            data: {
+                dataset: dataset,
+                backgroundImage: backgroundImage,
+                loadingImage: loadingImage,
+            },
+        });
+
+        const findPrizes = await this.prisma.drawPrize.findMany({ where: { drawId: findDraw.id } });
+
+        await Promise.all(
+            findPrizes.map(async (item) => {
+                let image = '';
+
+                if (item.image) {
+                    image = `draw/${newDraw.id}/prizes/${path.basename(item.image)}`;
+                    const folder = `draw/${newDraw.id}/prizes/`;
+
+                    await this.fileUploadService.copyFile(item.image, folder, path.basename(item.image));
+                }
+
+                await this.prisma.drawPrize.create({
+                    data: {
+                        drawId: newDraw.id,
+                        rank: item.rank,
+                        title: item.title,
+                        amount: item.amount,
+                        image: image,
+                        userId: request['user'].sub.id,
+                    },
+                });
+            }),
+        );
+
+        this.logger.log(`User ${request['user'].sub.id} is duplicating with ID ${findDraw.id}`);
+
+        return 'Duplicate success!';
     }
 }

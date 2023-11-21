@@ -1,6 +1,5 @@
 import { Controller, Post, Body, HttpStatus, HttpCode, UseGuards, Req, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from '../user/dto/create-user.dto';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthDto } from './dto/auth.dto';
 import { AuthGuard, RefreshGuard } from '../../guard/auth.guard';
@@ -12,42 +11,42 @@ import { Request } from 'express';
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-    @HttpCode(HttpStatus.CREATED)
-    @Post('signup')
-    @ApiOperation({ summary: 'Signup user', description: '## Create user with username and password' })
-    @ApiResponse({
-        status: HttpStatus.CREATED,
-        description: 'Signup successfully',
-    })
-    @ApiResponse({
-        status: HttpStatus.BAD_REQUEST,
-        description: 'Failed to signup',
-    })
-    @ApiBody({
-        type: CreateUserDto,
-        description: 'Create user with username and password',
-        examples: {
-            user1: {
-                summary: 'User 1',
-                description: '## User 1 for John Doe',
-                value: {
-                    username: 'John Doe',
-                    password: '12345678',
-                },
-            },
-            User2: {
-                summary: 'User 2',
-                description: '## User 2 for John Dan',
-                value: {
-                    username: 'Jane Dan',
-                    password: '12345678',
-                },
-            },
-        },
-    })
-    async signUp(@Body() signUpAuthDto: CreateUserDto): Promise<void> {
-        await this.authService.signUp(signUpAuthDto);
-    }
+    // @HttpCode(HttpStatus.CREATED)
+    // @Post('signup')
+    // @ApiOperation({ summary: 'Signup user', description: '## Create user with username and password' })
+    // @ApiResponse({
+    //     status: HttpStatus.CREATED,
+    //     description: 'Signup successfully',
+    // })
+    // @ApiResponse({
+    //     status: HttpStatus.BAD_REQUEST,
+    //     description: 'Failed to signup',
+    // })
+    // @ApiBody({
+    //     type: CreateUserDto,
+    //     description: 'Create user with username and password',
+    //     examples: {
+    //         user1: {
+    //             summary: 'User 1',
+    //             description: '## User 1 for John Doe',
+    //             value: {
+    //                 username: 'John Doe',
+    //                 password: '12345678',
+    //             },
+    //         },
+    //         User2: {
+    //             summary: 'User 2',
+    //             description: '## User 2 for John Dan',
+    //             value: {
+    //                 username: 'Jane Dan',
+    //                 password: '12345678',
+    //             },
+    //         },
+    //     },
+    // })
+    // async signUp(@Body() signUpAuthDto: CreateUserDto): Promise<void> {
+    //     await this.authService.signUp(signUpAuthDto);
+    // }
 
     @HttpCode(HttpStatus.CREATED)
     @Post('signin')

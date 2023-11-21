@@ -19,8 +19,12 @@ export class FileUploadService {
                 throw new BadRequestException('File Already Exists!');
             }
 
-            const filePath = path.join(directory, fileName).replace('\\', '/').replace('\\', '/');
+            const filePath = path.join(directory, fileName).replace('\\', '/').replace('\\', '/').replace('\\', '/');
             const folderPath = path.join(process.env.UPLOAD_FILE_PATH, directory);
+
+            if (!fs.existsSync(path.join(process.env.UPLOAD_FILE_PATH))) {
+                fs.mkdirSync(path.join(process.env.UPLOAD_FILE_PATH), { recursive: true });
+            }
 
             if (!fs.existsSync(folderPath)) {
                 fs.mkdirSync(folderPath, { recursive: true });
@@ -29,8 +33,7 @@ export class FileUploadService {
             fs.writeFileSync(path.join(folderPath, fileName), file.buffer);
             return filePath;
         } catch (error) {
-            console.log('🚀 ~ file: file-upload.service.ts:32 ~ FileUploadService ~ uploadFile ~ error:', error);
-            throw new BadRequestException();
+            throw new BadRequestException(error);
         }
     }
 
@@ -54,6 +57,42 @@ export class FileUploadService {
             if (await this.fileExists(fileName)) {
                 await fs.promises.unlink(folderPath).then(() => console.log('deleted!'));
             }
+        } catch (error) {
+            throw new BadRequestException();
+        }
+    }
+
+    async deleteDirectory(folder: string) {
+        try {
+            const folderPath = path.join(process.env.UPLOAD_FILE_PATH, folder);
+            fs.rm(folderPath, { recursive: true }, (err) => {
+                if (err) {
+                    console.error(`Error removing directory: ${err}`);
+                } else {
+                    console.log('Directory has been removed.');
+                }
+            });
+        } catch (error) {
+            throw new BadRequestException();
+        }
+    }
+
+    async copyFile(source: string, folder: string, filename: string) {
+        try {
+            const sourceDirectory = path.join(process.env.UPLOAD_FILE_PATH, source); // Replace with the source directory path.
+            const destinationDirectory = path.join(process.env.UPLOAD_FILE_PATH, folder, filename); // Replace with the destination directory path.
+
+            if (!fs.existsSync(path.join(process.env.UPLOAD_FILE_PATH, folder))) {
+                fs.mkdirSync(path.join(process.env.UPLOAD_FILE_PATH, folder), { recursive: true });
+            }
+
+            fs.copyFile(sourceDirectory, destinationDirectory, (err) => {
+                if (err) {
+                    console.error(`Error copying directory: ${err}`);
+                } else {
+                    console.log('Directory has been successfully copied.');
+                }
+            });
         } catch (error) {
             throw new BadRequestException();
         }

@@ -1,12 +1,13 @@
-import { Body, Controller, Delete, Get, Post, Patch, Param, Res, Req, UseGuards, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Patch, Param, Req, UseGuards, UseInterceptors, UploadedFile, UploadedFiles } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from 'src/guard/auth.guard';
+import { AuthGuard } from '../../guard/auth.guard';
 import { CreateDraw, CreateDrawUploadFiles } from './dto/create-draw.dto';
 import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { UpdateDraw, UpdateDrawUploadFiles } from './dto/update-draw.dto';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { RequestDraw } from './dto/request-draw.dto';
 import { DrawService } from './draw.service';
+import { DuplicateDraw } from './dto/duplicate-draw.dto';
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -16,24 +17,18 @@ export class DrawController {
     constructor(private readonly drawService: DrawService) {}
 
     @Get()
-    async getDraws() {
-        return await this.drawService.getDraws();
+    async getDraws(@Req() request: Request) {
+        return await this.drawService.getDraws(request);
     }
 
     @Get('id=:id')
-    async getDrawById(@Param('id') id: string) {
-        return await this.drawService.getDrawById(id);
+    async getDrawById(@Param('id') id: string, @Req() request: Request) {
+        return await this.drawService.getDrawById(id, request);
     }
 
     @Get('slug=:slug')
-    async getDrawBySlug(@Param('slug') slug: string) {
-        return await this.drawService.getDrawBySlug(slug);
-    }
-
-    @Get('report/:id')
-    async downloadDrawReport(@Param('id') id: string, @Res() res: Response) {
-        const result = await this.drawService.downloadDrawReport(id);
-        res.download(`${result}`);
+    async getDrawBySlug(@Param('slug') slug: string, @Req() request: Request) {
+        return await this.drawService.getDrawBySlug(slug, request);
     }
 
     @Post()
@@ -46,6 +41,11 @@ export class DrawController {
     @ApiConsumes('multipart/form-data', 'application/json')
     async createDraw(@Body() drawData: CreateDraw, @Req() request: Request, @UploadedFiles() files?: CreateDrawUploadFiles) {
         return await this.drawService.createDraw(drawData, request, files);
+    }
+
+    @Post('/:id/duplicate')
+    async duplicateCampaign(@Param('id') id: string, @Body() drawData: DuplicateDraw, @Req() request: Request) {
+        return await this.drawService.duplicateCampaign(id, drawData, request);
     }
 
     @Post('lucky-draw')
@@ -61,19 +61,29 @@ export class DrawController {
         ]),
     )
     @ApiConsumes('multipart/form-data', 'application/json')
-    async updateDraw(@Param('id') id: string, @Body() drawData: UpdateDraw, @UploadedFiles() files?: UpdateDrawUploadFiles) {
-        return await this.drawService.updateDraw(id, drawData, files);
+    async updateDraw(@Param('id') id: string, @Body() drawData: UpdateDraw, @Req() request: Request, @UploadedFiles() files?: UpdateDrawUploadFiles) {
+        return await this.drawService.updateDraw(id, drawData, request, files);
     }
 
     @Patch(':id/dataset')
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data', 'application/json')
-    async updateDataset(@Param('id') id: string, @UploadedFile() file?: Express.Multer.File) {
-        return await this.drawService.updateDataset(id, file);
+    async updateDataset(@Param('id') id: string, @Req() request: Request, @UploadedFile() file?: Express.Multer.File) {
+        return await this.drawService.updateDataset(id, request, file);
+    }
+
+    @Post(':id/remove-background')
+    async removeBackgroundImage(@Param('id') id: string, @Req() request: Request) {
+        return await this.drawService.removeBackgroundImage(id, request);
+    }
+
+    @Post(':id/remove-loading')
+    async removeLoadingImage(@Param('id') id: string, @Req() request: Request) {
+        return await this.drawService.removeLoadingImage(id, request);
     }
 
     @Delete(':id')
-    async deleteDraw(@Param('id') id: string) {
-        return await this.drawService.deleteDraw(id);
+    async deleteDraw(@Param('id') id: string, @Req() request: Request) {
+        return await this.drawService.deleteDraw(id, request);
     }
 }

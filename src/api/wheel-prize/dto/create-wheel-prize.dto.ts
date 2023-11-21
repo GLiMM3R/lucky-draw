@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { MaxLength, MinLength } from 'class-validator';
+import { MinLength } from 'class-validator';
 
 export class CreateWheelPrize {
     @ApiProperty({
@@ -14,7 +14,6 @@ export class CreateWheelPrize {
         type: String,
         example: 'Coupon 1,000,000 KIP',
     })
-    @MaxLength(30)
     @MinLength(3)
     @Transform(({ value }) => value.toLowerCase())
     title: string;

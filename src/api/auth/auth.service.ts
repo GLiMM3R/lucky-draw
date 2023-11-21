@@ -4,6 +4,7 @@ import { CreateUserDto } from '../user/dto/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { AuthResponseDto } from './dto/response-auth.dto';
 import { Request } from 'express';
+import { LoggerService } from '../../services/logger/logger.service';
 
 // NOTE - This is the interface for the token that will be returned to the user
 export interface IToken {
@@ -15,6 +16,7 @@ export class AuthService {
     constructor(
         private readonly usersService: UserService,
         private readonly jwtService: JwtService,
+        private readonly logger: LoggerService,
     ) {}
 
     async signUp(signUpAuthDto: CreateUserDto): Promise<void> {
@@ -31,6 +33,8 @@ export class AuthService {
 
         const access_token = await this.getJwtToken(payload);
         const refresh_token = await this.getJwtRefreshToken(payload);
+
+        this.logger.log(`User ${user.id} login.`);
 
         return {
             access_token,

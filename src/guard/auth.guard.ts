@@ -1,11 +1,15 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { PrismaService } from '../config/prisma/prisma.service';
 
 // NOTE - AuthGuard is used to protect routes
 @Injectable()
 export class AuthGuard implements CanActivate {
-    constructor(private jwtService: JwtService) {}
+    constructor(
+        private jwtService: JwtService,
+        private readonly prisma: PrismaService,
+    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
@@ -19,6 +23,12 @@ export class AuthGuard implements CanActivate {
             const payload = await this.jwtService.verifyAsync(token, {
                 secret: process.env.JWT_SECRET,
             });
+
+            const findUser = await this.prisma.user.findUnique({ where: { id: payload.sub.id } });
+
+            if (!findUser) {
+                throw new UnauthorizedException();
+            }
 
             request['user'] = payload;
         } catch (error) {

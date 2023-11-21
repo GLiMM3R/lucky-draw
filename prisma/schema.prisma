@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id           String        @id @default(auto()) @map("_id") @db.ObjectId
-  username     String?
+  username     String?       @unique
   password     String?
   isActive     Boolean?      @default(true)
   createdAt    DateTime      @default(now())
@@ -30,8 +30,8 @@ model User {
 model Draw {
   id              String       @id @default(auto()) @map("_id") @db.ObjectId
   userId          String       @db.ObjectId
-  slug            String       @unique
-  title           String       @unique
+  slug            String       @unique @db.String
+  title           String       @unique @db.String
   prizeCap        Int
   dataset         String?
   backgroundImage String?
@@ -78,7 +78,7 @@ model DrawPrize {
   createdBy  User         @relation(fields: [userId], references: [id])
   winners    DrawReport[]
 
-  @@map("randomPrize")
+  @@map("drawPrize")
 }
 
 model WheelPrize {

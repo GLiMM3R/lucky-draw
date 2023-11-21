@@ -14,12 +14,9 @@ export class UserService {
         private readonly langService: LanguageService,
     ) {}
 
-    // NOTE - This is create user
     async create(createUserDto: CreateUserDto): Promise<ResponseUserDto> {
-        // NOTE - This is where you would check the user's credentials
         await this.findDupByUsername(createUserDto.username);
 
-        // NOTE - This is where you would hash the user's password
         const hash = await bcrypt.hash(createUserDto.password, +process.env.SALT_ROUNDS);
 
         const createUser = await this.prisma.user.create({

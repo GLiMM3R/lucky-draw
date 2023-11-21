@@ -13,6 +13,7 @@ import { DrawModule } from './api/draw/draw.module';
 import { DrawPrizeModule } from './api/draw-prize/draw-prize.module';
 import { DrawReportModule } from './api/draw-report/draw-report.module';
 import { WheelReportModule } from './api/wheel-report/wheel-report.module';
+import { GuardModule } from './guard/guard.module';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { WheelReportModule } from './api/wheel-report/wheel-report.module';
         WheelReportModule,
         FilesModule,
         FileUploadModule,
+        GuardModule,
     ],
     controllers: [FilesController],
     providers: [],

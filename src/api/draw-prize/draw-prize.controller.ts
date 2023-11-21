@@ -2,7 +2,7 @@ import { Body, Get, Delete, Query, Controller, Post, Patch, Param, UploadedFile,
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
-import { AuthGuard } from 'src/guard/auth.guard';
+import { AuthGuard } from '../../guard/auth.guard';
 import { DrawPrizeService } from './draw-prize.service';
 import { CreateDrawPrize } from './dto/create-draw-prize.dto';
 import { UpdateDrawPrize } from './dto/update-draw-prize.dto';
@@ -20,23 +20,23 @@ export class DrawPrizeController {
         type: String,
         required: false,
     })
-    async getDrawPrizesbyDrawId(@Query('drawId') drawId?: string) {
-        return await this.drawPrizeService.getDrawPrizes(drawId);
+    async getDrawPrizesbyDrawId(@Query('drawId') drawId?: string, @Req() request?: Request) {
+        return await this.drawPrizeService.getDrawPrizes(drawId, request);
     }
 
     @Get('id=:id')
-    async getDrawPrizeById(@Param('id') id: string) {
-        return await this.drawPrizeService.getDrawPrizeById(id);
+    async getDrawPrizeById(@Param('id') id: string, @Req() request: Request) {
+        return await this.drawPrizeService.getDrawPrizeById(id, request);
     }
 
     @Get('slug=:slug')
-    async getDrawPrizeBySlug(@Param('slug') slug: string) {
-        return await this.drawPrizeService.getDrawPrizesBySlug(slug);
+    async getDrawPrizeBySlug(@Param('slug') slug: string, @Req() request: Request) {
+        return await this.drawPrizeService.getDrawPrizesBySlug(slug, request);
     }
 
     @Get('slug=:slug/winners')
-    async getWinnerDrawPrizeBySlug(@Param('slug') slug: string) {
-        return await this.drawPrizeService.getWinnerDrawPrizesBySlug(slug);
+    async getWinnerDrawPrizeBySlug(@Param('slug') slug: string, @Req() request: Request) {
+        return await this.drawPrizeService.getWinnerDrawPrizesBySlug(slug, request);
     }
 
     @Post()
@@ -49,12 +49,17 @@ export class DrawPrizeController {
     @Patch(':id')
     @UseInterceptors(FileInterceptor('image'))
     @ApiConsumes('multipart/form-data', 'application/json')
-    async updateDrawPrize(@Param('id') id: string, @Body() prizeData: UpdateDrawPrize, @UploadedFile() image?: Express.Multer.File) {
-        return await this.drawPrizeService.updateDrawPrize(id, prizeData, image);
+    async updateDrawPrize(
+        @Param('id') id: string,
+        @Body() prizeData: UpdateDrawPrize,
+        @UploadedFile() image?: Express.Multer.File,
+        @Req() request?: Request,
+    ) {
+        return await this.drawPrizeService.updateDrawPrize(id, prizeData, image, request);
     }
 
     @Delete(':id')
-    async deleteDrawPrize(@Param('id') id: string) {
-        return await this.drawPrizeService.deleteDrawPrize(id);
+    async deleteDrawPrize(@Param('id') id: string, @Req() request: Request) {
+        return await this.drawPrizeService.deleteDrawPrize(id, request);
     }
 }

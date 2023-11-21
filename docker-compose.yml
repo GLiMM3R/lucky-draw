@@ -29,7 +29,7 @@ services:
         networks:
             - app-network
         volumes:
-            - backend:/usr/src/app/static
+            - backend:/usr/src/files
         depends_on:
             - mongodb
 
