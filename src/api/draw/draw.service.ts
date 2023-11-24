@@ -316,7 +316,8 @@ export class DrawService {
             const shuffledArray = shuffleArray(generatedObjects);
 
             const randomIndices = new Set();
-            const maxIterations = 10000; // Define your maximum number of iterations
+            const phoneIndices = new Set();
+            const maxIterations = 5000;
             let iterations = 0;
 
             while (randomIndices.size < randomAvailableUnit && iterations < maxIterations) {
@@ -327,6 +328,7 @@ export class DrawService {
 
                 if (
                     !randomIndices.has(randomIndex) &&
+                    !phoneIndices.has(phoneNumber) &&
                     !winnerCount.some((obj) => obj.phone === phoneNumber && obj.prizeId === findPrize.id && obj.drawId === findDraw.id) &&
                     winnerCount.length < findDraw.prizeCap
                 ) {
@@ -346,43 +348,12 @@ export class DrawService {
             }
 
             if (randomIndices.size !== findPrize.amount) {
-                throw new ConflictException('Random not sucess');
+                throw new ConflictException('Random is not success');
             }
-            // function getRandomObjects(array: any[], numObjects: number) {
-            //     const randomIndices = new Set();
-            //     const randomObjects = [];
-
-            //     while (randomIndices.size < numObjects) {
-            //         const randomIndex = Math.floor(Math.random() * array.length);
-            //         const phoneNumber = array[randomIndex].phoneNumber;
-
-            //         if (!randomIndices.has(randomIndex) && !randomObjects.some((obj) => obj.phoneNumber === phoneNumber)) {
-            //             randomIndices.add(randomIndex);
-            //             randomObjects.push(array[randomIndex]);
-            //         }
-            //     }
-
-            //     return randomObjects;
-            // }
-
-            // const results = getRandomObjects(shuffledArray, findPrize.amount);
-
-            // results.forEach(async (item) => {
-            //     await this.prisma.drawReport.create({
-            //         data: {
-            //             drawId: findDraw.id,
-            //             prizeId: findPrize.id,
-            //             name: item.name,
-            //             customerId: item.customerId,
-            //             phone: item.phoneNumber,
-            //             userId: request['user'].sub.id,
-            //         },
-            //     });
-            // });
 
             await this.prisma.drawPrize.update({ where: { id: findPrize.id }, data: { isComplete: true } });
 
-            this.logger.log(`User ${request['user'].sub.id} is radnom draw with  DrawId ${findDraw.id} and PrizeId ${findPrize.id}`);
+            this.logger.log(`User ${request['user'].sub.id} is random draw with  DrawId ${findDraw.id} and PrizeId ${findPrize.id}`);
 
             return 'Draw success!';
         } else {
