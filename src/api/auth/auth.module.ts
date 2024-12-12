@@ -6,19 +6,18 @@ import { PrismaModule } from '../../config/prisma/prisma.module';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { LanguageModule } from '../../config/lang/language.module';
+import { LoggerService } from '../../services/logger/logger.service';
 
 @Module({
     imports: [
-        PrismaModule,
-        UserModule,
         JwtModule.register({
             global: true,
-            secret: process.env.JWT_SECRET,
-            signOptions: { expiresIn: process.env.JWT_EXPIRATION_TIME },
         }),
+        PrismaModule,
+        UserModule,
         LanguageModule,
     ],
     controllers: [AuthController],
-    providers: [AuthService, UserService],
+    providers: [AuthService, UserService, LoggerService],
 })
 export class AuthModule {}

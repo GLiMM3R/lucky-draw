@@ -3,6 +3,8 @@ import { UserService } from '../user/user.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { AuthResponseDto } from './dto/response-auth.dto';
+import { Request } from 'express';
+import { LoggerService } from '../../services/logger/logger.service';
 
 // NOTE - This is the interface for the token that will be returned to the user
 export interface IToken {
@@ -12,48 +14,76 @@ export interface IToken {
 @Injectable()
 export class AuthService {
     constructor(
-        private usersService: UserService,
-        private jwtService: JwtService,
+        private readonly usersService: UserService,
+        private readonly jwtService: JwtService,
+        private readonly logger: LoggerService,
     ) {}
 
     async signUp(signUpAuthDto: CreateUserDto): Promise<void> {
         await this.usersService.create(signUpAuthDto);
-        // await this.emailOtpService.sendEmailOtp(signUpAuthDto.username);
     }
 
     async signIn(username: string, pass: string): Promise<IToken> {
-        // NOTE - This is where you would check the user's credentials
         const user = await this.usersService.findOneByUsername(username, pass);
 
         const payload = {
             username: user.username,
-            sub: { user: user.id, roles: user.roles },
+            sub: { id: user.id },
         };
 
+        const access_token = await this.getJwtToken(payload);
+        const refresh_token = await this.getJwtRefreshToken(payload);
+
+        this.logger.log(`User ${user.id} login.`);
+
         return {
-            access_token: await this.jwtService.signAsync(payload),
-            refresh_token: await this.jwtService.signAsync(payload, {
-                expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
-                secret: process.env.JWT_REFRESH_TOKEN_SECRET,
-            }),
+            access_token,
+            refresh_token,
         };
     }
 
-    async refreshToken(token: any): Promise<AuthResponseDto> {
-        const payload = {
-            username: token.username,
-            sub: { user: token.sub.user, roles: token.sub.roles },
-        };
+    async refreshToken(request: Request): Promise<AuthResponseDto> {
+        const { sub } = request['user'];
 
         // NOTE - This is where you would check the user's credentials
-        await this.usersService.findOneByUsername(payload.username);
+        const user = await this.usersService.getUser(sub.id);
+
+        const payload = {
+            username: user.username,
+            sub: {
+                id: user.id,
+            },
+        };
+        const access_token = await this.getJwtToken(payload);
+        const refresh_token = await this.getJwtRefreshToken(payload);
 
         return {
-            access_token: await this.jwtService.signAsync(payload),
-            refresh_token: await this.jwtService.signAsync(payload, {
-                expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME,
-                secret: process.env.JWT_REFRESH_TOKEN_SECRET,
-            }),
+            access_token,
+            refresh_token,
         };
+    }
+
+    async getJwtToken(payload: any) {
+        const secret = process.env.JWT_SECRET;
+        const expiresIn = process.env.JWT_EXPIRATION_TIME;
+
+        const token = await this.jwtService.signAsync(payload, {
+            expiresIn,
+            secret,
+        });
+
+        return token;
+    }
+
+    async getJwtRefreshToken(payload: any) {
+        const secret = process.env.JWT_REFRESH_TOKEN_SECRET;
+
+        const expiresIn = process.env.JWT_REFRESH_TOKEN_EXPIRATION_TIME;
+        const token = await this.jwtService.signAsync(payload, {
+            expiresIn,
+            secret,
+        });
+
+        return token;
     }
 }

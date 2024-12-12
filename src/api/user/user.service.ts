@@ -6,7 +6,6 @@ import { PrismaService } from '../../config/prisma/prisma.service';
 import { ResponseUserDto } from './dto/response-user.dto';
 import * as bcrypt from 'bcrypt';
 import { LanguageService } from '../../config/lang/language.service';
-import { validateMongodbID } from '../../util/id.util';
 
 @Injectable()
 export class UserService {
@@ -15,12 +14,9 @@ export class UserService {
         private readonly langService: LanguageService,
     ) {}
 
-    // NOTE - This is create user
     async create(createUserDto: CreateUserDto): Promise<ResponseUserDto> {
-        // NOTE - This is where you would check the user's credentials
         await this.findDupByUsername(createUserDto.username);
 
-        // NOTE - This is where you would hash the user's password
         const hash = await bcrypt.hash(createUserDto.password, +process.env.SALT_ROUNDS);
 
         const createUser = await this.prisma.user.create({
@@ -47,11 +43,11 @@ export class UserService {
     }
 
     // NOTE - This is find one user
-    async findOne(id: string): Promise<ResponseUserDto> {
-        const _idValidation = await validateMongodbID(id);
-        if (!_idValidation) {
-            throw new BadRequestException(this.langService.CREDENTIAL_NOT_MATCH());
-        }
+    async getUser(id: string): Promise<ResponseUserDto> {
+        // const _idValidation = await validateMongodbID(id);
+        // if (!_idValidation) {
+        //     throw new BadRequestException(this.langService.CREDENTIAL_NOT_MATCH());
+        // }
 
         const user = await this.prisma.user.findUnique({
             where: {
@@ -68,7 +64,7 @@ export class UserService {
 
     // NOTE - This is update user
     async update(id: string, updateUserDto: UpdateUserDto): Promise<ResponseUserDto> {
-        await this.findOne(id);
+        await this.getUser(id);
         return this.prisma.user
             .update({
                 where: {
@@ -83,7 +79,7 @@ export class UserService {
 
     // NOTE - This is remove user
     async remove(id: string): Promise<void> {
-        await this.findOne(id);
+        await this.getUser(id);
         await this.prisma.user.delete({
             where: {
                 id: id,

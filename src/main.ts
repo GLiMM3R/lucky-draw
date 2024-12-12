@@ -2,20 +2,19 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ResponseInterceptor } from './config/interceptors/response.interceptor';
 import { setupSwagger } from './config/swagger/swagger.config';
+import { ValidationPipe } from '@nestjs/common';
+import { generateUser } from './config/prisma/seed';
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-    // NOTE - This is for CORS (Cross-Origin Resource Sharing)
+    app.setGlobalPrefix('api');
     app.enableCors();
-    // NOTE - This is for interceptors (middleware)
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
     app.useGlobalInterceptors(new ResponseInterceptor());
-
-    // NOTE - This is for swagger documentation
     setupSwagger(app);
-
-    // NOTE - This is for the port and host
     await app.listen(process.env.PORT, '0.0.0.0', async () => {
         console.log(`🚀 Application is running on: ${await app.getUrl()}/api-docs`);
     });
 }
 bootstrap();
+generateUser();
