@@ -1,14 +1,3 @@
-<a name="readme-top"></a>
-<p align="center">
-  <a href="https://www.facebook.com/iquritech" target="blank"><img src="src/images/iquri-logo.jpg" width="300" alt="IQURI TECH LOGO" /></a>
-</p>
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-  <p align="center">Nestjs boilerplate template for IQURI TECH ORGANIZATION.</p>
-    <p align="center">
-  <a href="https://www.facebook.com/iquritech" target="_blank"><img src="https://img.shields.io/badge/facebook-1877F2?style=flat&logo=facebook&logoColor=white"></a>
-</p>
-
 <!-- GETTING STARTED -->
 
 ## Description
